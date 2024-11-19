@@ -1,15 +1,15 @@
 #include <unistd.h>
-#include <stdint.h>  // For intptr_t
+#include <stdint.h>
 #include "my_malloc.h"
-#include <stdio.h>   // For printf()
-#include <string.h>  // For memset()
+#include <stdio.h>
+#include <string.h>
+
+// Explicit declaration for sbrk
+extern void *sbrk(int increment);
 
 #define BLOCK_SIZE sizeof(block_t)
 
 static block_t *heap_start = NULL; // Pointer to the first block
-
-// Explicit declaration for sbrk
-extern void *sbrk(int increment); // Use int instead of intptr_t
 
 // Helper functions
 block_t *find_best_fit(size_t size);
@@ -31,7 +31,7 @@ void *malloc(size_t size) {
         }
         heap_start = block;
     } else {
-        block = find_best_fit(size);
+        block = find_best_fit(size); // Use best-fit instead of first-fit
         if (block) {
             // Found a suitable block
             if (block->size > size + BLOCK_SIZE) {
@@ -62,13 +62,13 @@ block_t *find_best_fit(size_t size) {
     while (current) {
         if (current->free && current->size >= size) {
             if (!best_fit || current->size < best_fit->size) {
-                best_fit = current;
+                best_fit = current; // Update best-fit block
             }
         }
         current = current->next;
     }
 
-    return best_fit;
+    return best_fit; // Return the smallest suitable block
 }
 
 // Request more space from the OS
@@ -117,7 +117,6 @@ void free(void *ptr) {
     block->free = 1;
 
     // Coalesce adjacent free blocks
-    // Coalesce with next block
     if (block->next && block->next->free) {
         block->size += BLOCK_SIZE + block->next->size;
         block->next = block->next->next;
@@ -125,7 +124,6 @@ void free(void *ptr) {
             block->next->prev = block;
         }
     }
-    // Coalesce with previous block
     if (block->prev && block->prev->free) {
         block->prev->size += BLOCK_SIZE + block->size;
         block->prev->next = block->next;
@@ -152,19 +150,16 @@ void *calloc(size_t num, size_t size) {
 // Implement realloc
 void *realloc(void *ptr, size_t size) {
     if (!ptr) {
-        // Equivalent to malloc
         return malloc(size);
     }
 
     block_t *block = get_block_ptr(ptr);
     if (block->size >= size) {
-        // Current block is sufficient
         if (block->size > size + BLOCK_SIZE) {
             split_block(block, size);
         }
         return ptr;
     } else {
-        // Need to allocate a new block
         void *new_ptr = malloc(size);
         if (!new_ptr) {
             return NULL;
@@ -178,7 +173,7 @@ void *realloc(void *ptr, size_t size) {
 // Print heap boundaries
 void print_heap_bounds() {
     printf("Heap starts at: %p\n", (void *)heap_start);
-    printf("Heap ends at: %p\n", (void *)sbrk(0)); // Correctly cast to void*
+    printf("Heap ends at: %p\n", (void *)sbrk(0));
 }
 
 // Calculate memory leaks

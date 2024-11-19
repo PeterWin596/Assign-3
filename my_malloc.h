@@ -5,10 +5,10 @@
 
 // Block metadata structure
 typedef struct block_t {
-    size_t size;
-    int free;
-    struct block_t *next;
-    struct block_t *prev;
+    size_t size;            // Size of the block
+    int free;               // 1 if free, 0 if allocated
+    struct block_t *next;   // Pointer to the next block
+    struct block_t *prev;   // Pointer to the previous block
 } block_t;
 
 // Function prototypes
